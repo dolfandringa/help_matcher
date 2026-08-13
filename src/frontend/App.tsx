@@ -113,6 +113,8 @@ function SearchPanel() {
     setRecordTypes(selectedTypes);
     if (query.trim().length === 0) {
       void loadDefaultRecords(selectedTypes);
+    } else {
+      void search(selectedTypes);
     }
   };
 

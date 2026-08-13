@@ -19,7 +19,7 @@ type SearchState = {
   setMapBounds: (mapBounds: MapBounds) => void;
   useDeviceLocation: () => void;
   loadDefaultRecords: (recordTypes?: RecordType[]) => Promise<void>;
-  search: () => Promise<void>;
+  search: (recordTypesOverride?: RecordType[]) => Promise<void>;
 };
 
 const colombiaView: ViewState = {
@@ -76,16 +76,17 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       });
     }
   },
-  search: async () => {
+  search: async (recordTypesOverride) => {
     const { query, recordTypes, loadDefaultRecords } = get();
+    const selectedRecordTypes = recordTypesOverride ?? recordTypes;
     if (query.trim().length === 0) {
-      await loadDefaultRecords(recordTypes);
+      await loadDefaultRecords(selectedRecordTypes);
       return;
     }
 
     set({ isLoading: true, error: undefined });
     try {
-      const results = await searchHelpRecords(query.trim(), recordTypes);
+      const results = await searchHelpRecords(query.trim(), selectedRecordTypes);
       set({ results, isLoading: false, selectedResultId: results[0] ? resultKey(results[0]) : undefined });
     } catch (error) {
       set({
