@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="{{ page.lang | default: site.lang | default: 'en' }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
+    <style>
+      body {
+        margin: 0 auto;
+        max-width: 980px;
+        padding: 2rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        line-height: 1.55;
+        color: #24292f;
+      }
+
+      img,
+      video {
+        max-width: 100%;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        border-spacing: 0;
+      }
+
+      th,
+      td {
+        padding: 0.5rem;
+        border: 1px solid #d0d7de;
+      }
+
+      code {
+        padding: 0.2em 0.4em;
+        border-radius: 6px;
+        background: #f6f8fa;
+      }
+
+      pre {
+        overflow-x: auto;
+        padding: 1rem;
+        border-radius: 6px;
+        background: #f6f8fa;
+      }
+    </style>
+  </head>
+  <body>
+    {{ content }}
+  </body>
+</html>
