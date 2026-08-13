@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "help-matcher"
+version = "0.1.0"
+description = "FastAPI backend for matching disaster relief needs with offers of help."
+authors = ["Help Matcher Contributors"]
+readme = "README.md"
+packages = [{ include = "help_matcher", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.116.1"
+uvicorn = { extras = ["standard"], version = "^0.35.0" }
+sqlmodel = "^0.0.24"
+psycopg = { extras = ["binary"], version = "^3.2.9" }
+pydantic-settings = "^2.10.1"
+alembic = "^1.16.4"
+bcrypt = "^4.2.1"
+pyjwt = "^2.10.1"
+python-multipart = "^0.0.20"
+httpx = "^0.28.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+pytest-bdd = "^8.1.0"
+
+[tool.poetry.scripts]
+serve = "help_matcher.management:serve"
+create_admin = "help_matcher.management:create_admin"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
