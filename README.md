@@ -3,6 +3,13 @@
 FastAPI/Postgres backend and LLM WhatsApp bot/interface to match earthquake-relief demand/supply. Allow people offering help and people needing help to find each other easily, without adding admin overhead on forms/apps/etc. Using an WhatsApp LLM bot people can interface with the system and tell us what they're offering/need and the backend will log that. Goal is to provide a webinterface to allow people to search for offers/demands and get in contact with each other that way. I would also love to have an auto-matching system in there that automatically suggests to people who could help them or who they could help straight away.
 And making AI generated images they can post on social media to get attention is also a nice feature.
 
+Example help-request conversation:
+
+| Initial request | Follow-up details | Registered demand |
+| --- | --- | --- |
+| ![WhatsApp help request initial message](docs/images/whatsapp-help-request-step-1.svg) | ![WhatsApp help request follow-up questions](docs/images/whatsapp-help-request-step-2.svg) | ![WhatsApp help request registered demand](docs/images/whatsapp-help-request-step-3.svg) |
+
+
 ## Run locally
 
 ```bash
@@ -72,12 +79,6 @@ def admin_only_endpoint():
 ```
 
 ## WhatsApp bot Python interface
-
-Example help-request conversation:
-
-| Initial request | Follow-up details | Registered demand |
-| --- | --- | --- |
-| ![WhatsApp help request initial message](docs/images/whatsapp-help-request-step-1.svg) | ![WhatsApp help request follow-up questions](docs/images/whatsapp-help-request-step-2.svg) | ![WhatsApp help request registered demand](docs/images/whatsapp-help-request-step-3.svg) |
 
 Bot code should import the small function API from `help_matcher.whatsapp`:
 
