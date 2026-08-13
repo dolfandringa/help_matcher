@@ -1,6 +1,7 @@
 # Help Matcher
 
-FastAPI/Postgres backend for earthquake-relief intake through a WhatsApp bot.
+FastAPI/Postgres backend and LLM WhatsApp bot/interface to match earthquake-relief demand/supply. Allow people offering help and people needing help to find each other easily, without adding admin overhead on forms/apps/etc. Using an WhatsApp LLM bot people can interface with the system and tell us what they're offering/need and the backend will log that. Goal is to provide a webinterface to allow people to search for offers/demands and get in contact with each other that way. I would also love to have an auto-matching system in there that automatically suggests to people who could help them or who they could help straight away.
+And making AI generated images they can post on social media to get attention is also a nice feature.
 
 ## Run locally
 
@@ -78,13 +79,40 @@ Bot code should import the small function API from `help_matcher.whatsapp`:
 from help_matcher.whatsapp import (
     close_demand,
     close_offer,
+    complete_conversation,
     create_demand,
     create_offer,
     extract_text_messages,
+    get_or_create_conversation,
+    record_bot_reply,
     reply_to_message,
+    save_conversation_state,
 )
 ```
 
 The create functions automatically create a regular user when the WhatsApp BSUID is unknown. The close functions only close records owned by that BSUID.
 
 Use `extract_text_messages(webhook_payload)` to normalize incoming Meta webhook text messages. Use `reply_to_message(incoming, "message")` to reply to a specific incoming message through Meta's WhatsApp Cloud API. Replies require `META_ACCESS_TOKEN`, `META_PHONE_NUMBER_ID`, and `META_API_VERSION` in `.env`.
+
+LLM bot code can keep multi-turn state in `Conversation` records:
+
+```python
+incoming = extract_text_messages(webhook_payload)[0]
+conversation = get_or_create_conversation(session, incoming)
+
+# Ask follow-up questions while the LLM gathers enough fields.
+conversation = save_conversation_state(
+    session,
+    conversation,
+    current_step="ask_location",
+    collected_data={"tags": ["water"], "original_message": incoming.text},
+    llm_context_summary="User needs water; location is still missing.",
+)
+reply = "En que barrio o direccion necesitas ayuda?"
+reply_response = reply_to_message(incoming, reply)
+record_bot_reply(session, conversation, text=reply, meta_message_id=reply_response["messages"][0]["id"])
+
+# Once complete, create the record and mark the conversation complete.
+create_demand(session, whatsapp_bsuid=incoming.from_bsuid, original_message=incoming.text, tags=["water"])
+complete_conversation(session, conversation)
+```

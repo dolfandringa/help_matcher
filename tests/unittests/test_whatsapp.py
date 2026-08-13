@@ -5,12 +5,16 @@ from help_matcher.config import Settings
 from help_matcher.models import Demand, Offer, RecordStatus, User
 from help_matcher.whatsapp import (
     IncomingWhatsAppMessage,
+    complete_conversation,
     close_demand,
     close_offer,
     create_demand,
     create_offer,
     extract_text_messages,
+    get_or_create_conversation,
+    record_bot_reply,
     reply_to_message,
+    save_conversation_state,
 )
 
 
@@ -147,3 +151,35 @@ def test_reply_to_message_posts_contextual_whatsapp_reply(monkeypatch) -> None:
     assert captured["json"]["to"] == "CO.123"
     assert captured["json"]["context"] == {"message_id": "wamid.1"}
     assert captured["json"]["text"]["body"] == "Gracias, recibimos tu mensaje."
+
+
+def test_conversation_tracks_message_history_and_state() -> None:
+    with make_session() as session:
+        incoming = IncomingWhatsAppMessage(
+            message_id="wamid.1",
+            from_bsuid="CO.123",
+            text="Necesito agua",
+            contact_name="Ana",
+            phone_number="CO.123",
+        )
+
+        conversation = get_or_create_conversation(session, incoming, current_step="classify_intent")
+        conversation = save_conversation_state(
+            session,
+            conversation,
+            current_step="ask_location",
+            collected_data={"original_message": "Necesito agua", "tags": ["water"]},
+            llm_context_summary="User needs water; location still missing.",
+        )
+        conversation = record_bot_reply(session, conversation, text="En que barrio estas?", meta_message_id="reply-1")
+        conversation = complete_conversation(session, conversation)
+
+        user = session.get(User, conversation.user_id)
+
+        assert user is not None
+        assert user.whatsapp_bsuid == "CO.123"
+        assert conversation.status == "completed"
+        assert conversation.current_step == "ask_location"
+        assert conversation.collected_data["tags"] == ["water"]
+        assert [message["role"] for message in conversation.message_history] == ["user", "assistant"]
+        assert conversation.completed_at is not None
