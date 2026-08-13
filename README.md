@@ -18,6 +18,10 @@ Example help-request conversation:
 | --- | --- | --- |
 | ![WhatsApp help request initial message](docs/images/whatsapp-help-request-step-1.svg) | ![WhatsApp help request follow-up questions](docs/images/whatsapp-help-request-step-2.svg) | ![WhatsApp help request registered demand](docs/images/whatsapp-help-request-step-3.svg) |
 
+Frontend search and map prototype:
+
+<video src="docs/images/ui_example.mp4" controls width="100%"></video>
+
 
 
 # Technical docs
