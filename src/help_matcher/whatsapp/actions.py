@@ -1,4 +1,6 @@
 from fastapi import HTTPException, status
+from geoalchemy2.elements import WKTElement
+from shapely.geometry import shape
 from sqlmodel import Session, select
 
 from help_matcher.models import Demand, DemandUser, Offer, OfferUser, RecordStatus, User, UserRole, utc_now
@@ -7,6 +9,12 @@ from help_matcher.tags import link_tags
 
 def _title_from_message(message: str) -> str:
     return message.strip()[:200]
+
+
+def _geometry_from_geojson(geometry_geojson: dict | None) -> WKTElement | None:
+    if geometry_geojson is None:
+        return None
+    return WKTElement(shape(geometry_geojson).wkt, srid=4326)
 
 
 def get_or_create_user(
@@ -59,6 +67,7 @@ def create_offer(
     administrative_area_name: str | None = None,
     administrative_area_level: str | None = None,
     address_text: str | None = None,
+    geometry_geojson: dict | None = None,
 ) -> Offer:
     """Create an ``Offer`` from a WhatsApp conversation."""
 
@@ -75,6 +84,7 @@ def create_offer(
         administrative_area_name=administrative_area_name,
         administrative_area_level=administrative_area_level,
         address_text=address_text,
+        geometry=_geometry_from_geojson(geometry_geojson),
     )
     session.add(offer)
     session.commit()
@@ -99,6 +109,7 @@ def create_demand(
     administrative_area_name: str | None = None,
     administrative_area_level: str | None = None,
     address_text: str | None = None,
+    geometry_geojson: dict | None = None,
 ) -> Demand:
     """Create a ``Demand`` from a WhatsApp conversation."""
 
@@ -115,6 +126,7 @@ def create_demand(
         administrative_area_name=administrative_area_name,
         administrative_area_level=administrative_area_level,
         address_text=address_text,
+        geometry=_geometry_from_geojson(geometry_geojson),
     )
     session.add(demand)
     session.commit()

@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     )
     jwt_algorithm: str = Field(default="HS256", validation_alias="JWT_ALGORITHM")
     jwt_expire_minutes: int = Field(default=60, validation_alias="JWT_EXPIRE_MINUTES")
+    nominatim_base_url: str = Field(default="https://nominatim.openstreetmap.org", validation_alias="NOMINATIM_BASE_URL")
+    nominatim_user_agent: str = Field(default="help-matcher/0.1", validation_alias="NOMINATIM_USER_AGENT")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

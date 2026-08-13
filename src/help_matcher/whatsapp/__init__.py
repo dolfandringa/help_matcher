@@ -4,6 +4,7 @@ from help_matcher.whatsapp.actions import close_demand, close_offer, create_dema
 from help_matcher.whatsapp.conversations import (
     abandon_conversation,
     complete_conversation,
+    geocode_conversation_location,
     get_or_create_conversation,
     record_bot_reply,
     record_incoming_message,
@@ -21,6 +22,7 @@ __all__ = [
     "create_demand",
     "create_offer",
     "extract_text_messages",
+    "geocode_conversation_location",
     "get_or_create_conversation",
     "get_or_create_user",
     "record_bot_reply",
@@ -28,4 +30,3 @@ __all__ = [
     "reply_to_message",
     "save_conversation_state",
 ]
-

@@ -10,6 +10,7 @@ from help_matcher.whatsapp import (
     create_demand,
     create_offer,
     extract_text_messages,
+    geocode_conversation_location,
     get_or_create_conversation,
     record_bot_reply,
     reply_to_message,
@@ -36,12 +37,39 @@ def test_create_offer_creates_unknown_whatsapp_user() -> None:
             administrative_area_level="locality",
         )
 
-        user = session.get(User, offer.user_id)
+        user = offer.contacts[0]
 
         assert user is not None
         assert user.whatsapp_bsuid == "bsuid-1"
         assert [tag.name for tag in offer.tags] == ["water"]
         assert offer.administrative_area_name == "Chapinero"
+
+
+def test_geocode_conversation_location_saves_geojson(monkeypatch) -> None:
+    with make_session() as session:
+        incoming = IncomingWhatsAppMessage(message_id="wamid.1", from_bsuid="CO.456", text="Necesito ayuda")
+        conversation = get_or_create_conversation(session, incoming)
+        conversation = save_conversation_state(
+            session,
+            conversation,
+            collected_data={"administrative_area_name": "Cali", "address_text": "Calle 9 con 44"},
+        )
+
+        monkeypatch.setattr(
+            "help_matcher.whatsapp.conversations.geocode_location",
+            lambda **_: {"type": "Point", "coordinates": [-76.5402, 3.4225]},
+        )
+
+        conversation = geocode_conversation_location(session, conversation)
+        demand = create_demand(
+            session,
+            whatsapp_bsuid="CO.456",
+            original_message="Necesito ayuda",
+            geometry_geojson=conversation.collected_data["geometry"],
+        )
+
+        assert conversation.collected_data["geometry"] == {"type": "Point", "coordinates": [-76.5402, 3.4225]}
+        assert demand.geometry is not None
 
 
 def test_create_and_close_demand() -> None:

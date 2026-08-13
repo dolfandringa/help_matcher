@@ -2,10 +2,12 @@ import uvicorn
 from geoalchemy2.elements import WKTElement
 from pydantic import Field
 from pydantic_settings import BaseSettings, CliApp, SettingsConfigDict
+from shapely.geometry import shape
 from sqlmodel import Session, select, text
 
 from help_matcher.auth import hash_password
 from help_matcher.database import engine
+from help_matcher.geocoding import geocode_location
 from help_matcher.models import Demand, DemandUser, OAuthIdentity, OAuthProvider, Offer, OfferUser, User, UserRole, utc_now
 from help_matcher.tags import link_tags
 
@@ -168,6 +170,22 @@ class LoadSampleDataSettings(BaseSettings):
                 session.refresh(contact)
                 return contact
 
+            def sample_geometry(
+                *,
+                administrative_area_name: str,
+                address_text: str,
+                fallback_wkt: str,
+            ) -> WKTElement:
+                try:
+                    geometry = geocode_location(
+                        administrative_area_name=administrative_area_name,
+                        address_text=address_text,
+                    )
+                except Exception as exc:
+                    print(f"Geocoding failed for '{address_text}': {exc}. Using fallback point.")
+                    geometry = None
+                return WKTElement(shape(geometry).wkt if geometry else fallback_wkt, srid=4326)
+
             contacts = {
                 "maquinaria": sample_contact("maquinaria", "Contacto maquinaria", "+57 300 000 0001"),
                 "olla": sample_contact("olla", "Coordinacion olla comunitaria", "+57 300 000 0002"),
@@ -192,7 +210,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="Cali",
                         administrative_area_level="municipality",
                         address_text="Cali",
-                        geometry=WKTElement("POINT(-76.5320 3.4516)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="Cali",
+                            address_text="Cali",
+                            fallback_wkt="POINT(-76.5320 3.4516)",
+                        ),
                     ),
                     ["maquinaria", "escombros", "rescate"],
                     [contacts["maquinaria"]],
@@ -207,7 +229,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="El Limonar",
                         administrative_area_level="locality",
                         address_text="Cruce Calle 62 con Carrera Tercera, al lado de Universidad Santiago de Cali",
-                        geometry=WKTElement("POINT(-76.5450 3.4074)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="El Limonar",
+                            address_text="Cruce Calle 62 con Carrera Tercera, Cali",
+                            fallback_wkt="POINT(-76.5450 3.4074)",
+                        ),
                     ),
                     ["comida", "olla comunitaria", "vecinos"],
                     [contacts["olla"]],
@@ -223,7 +249,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="Barrio Carrera 60 con Calle 4",
                         administrative_area_level="locality",
                         address_text="Carrera 60 con Calle 4, Cali",
-                        geometry=WKTElement("POINT(-76.5470 3.4215)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="Cali",
+                            address_text="Carrera 60 con Calle 4, Cali",
+                            fallback_wkt="POINT(-76.5470 3.4215)",
+                        ),
                     ),
                     ["agua", "comida", "hidratacion", "rescatistas"],
                     [contacts["acopio"]],
@@ -241,7 +271,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="Cali",
                         administrative_area_level="locality",
                         address_text="Ancianato de las Hermanitas de los Pobres, Cali",
-                        geometry=WKTElement("POINT(-76.5319 3.4516)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="Cali",
+                            address_text="Ancianato de las Hermanitas de los Pobres, Cali",
+                            fallback_wkt="POINT(-76.5319 3.4516)",
+                        ),
                     ),
                     ["panales", "agua", "alimentos", "escombros"],
                     [contacts["marta"], contacts["sorangela"]],
@@ -257,7 +291,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="Edificio Vanessa",
                         administrative_area_level="locality",
                         address_text="Calle 9 con 44, Cali",
-                        geometry=WKTElement("POINT(-76.5402 3.4225)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="Edificio Vanessa",
+                            address_text="Calle 9 con 44, Cali",
+                            fallback_wkt="POINT(-76.5402 3.4225)",
+                        ),
                     ),
                     ["volquetas", "comunicacion", "megafonos", "chalecos"],
                     [contacts["david"]],
@@ -274,7 +312,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="Edificio Vanessa",
                         administrative_area_level="locality",
                         address_text="Calle 9 con 44, Cali",
-                        geometry=WKTElement("POINT(-76.5402 3.4225)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="Edificio Vanessa",
+                            address_text="Calle 9 con 44, Cali",
+                            fallback_wkt="POINT(-76.5402 3.4225)",
+                        ),
                     ),
                     ["rescate", "herramientas", "proteccion", "radios", "vacunas", "hidratacion"],
                     [contacts["vanessa"]],
@@ -289,7 +331,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="Nueva Tequendama",
                         administrative_area_level="barrio",
                         address_text="Edificio Cantabria, Calle 8b con 46, Cali",
-                        geometry=WKTElement("POINT(-76.5427 3.4205)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="Nueva Tequendama",
+                            address_text="Edificio Cantabria, Calle 8b con 46, Cali",
+                            fallback_wkt="POINT(-76.5427 3.4205)",
+                        ),
                     ),
                     ["radios", "comunicacion", "rescate"],
                     [contacts["jonathan"]],
@@ -304,7 +350,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="La Paz",
                         administrative_area_level="corregimiento",
                         address_text="Corregimiento de La Paz, Cali",
-                        geometry=WKTElement("POINT(-76.5857 3.5090)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="La Paz",
+                            address_text="Corregimiento de La Paz, Cali",
+                            fallback_wkt="POINT(-76.5857 3.5090)",
+                        ),
                     ),
                     ["vivienda", "familias", "ayuda urgente"],
                     [contacts["libardo"]],
@@ -319,7 +369,11 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_name="Torres de Limonar Capri",
                         administrative_area_level="building",
                         address_text="Torres de Limonar Capri, Cali",
-                        geometry=WKTElement("POINT(-76.5485 3.4037)", srid=4326),
+                        geometry=sample_geometry(
+                            administrative_area_name="Torres de Limonar Capri",
+                            address_text="Torres de Limonar Capri, Cali",
+                            fallback_wkt="POINT(-76.5485 3.4037)",
+                        ),
                     ),
                     ["rescate", "maquinaria", "vida bajo escombros"],
                     [contacts["limonar"]],

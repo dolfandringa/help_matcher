@@ -2,6 +2,7 @@ from typing import Any
 
 from sqlmodel import Session, select
 
+from help_matcher.geocoding import geocode_location
 from help_matcher.models import Conversation, ConversationIntent, ConversationStatus, utc_now
 from help_matcher.whatsapp.actions import get_or_create_user
 from help_matcher.whatsapp.messages import IncomingWhatsAppMessage
@@ -86,6 +87,32 @@ def save_conversation_state(
     return conversation
 
 
+def geocode_conversation_location(
+    session: Session,
+    conversation: Conversation,
+    *,
+    administrative_area_name: str | None = None,
+    address_text: str | None = None,
+) -> Conversation:
+    """Geocode location fields and store GeoJSON in conversation state."""
+
+    collected_administrative_area = administrative_area_name or conversation.collected_data.get("administrative_area_name")
+    collected_address = address_text or conversation.collected_data.get("address_text")
+    geometry = geocode_location(
+        administrative_area_name=collected_administrative_area,
+        address_text=collected_address,
+    )
+    return save_conversation_state(
+        session,
+        conversation,
+        collected_data={
+            "administrative_area_name": collected_administrative_area,
+            "address_text": collected_address,
+            "geometry": geometry,
+        },
+    )
+
+
 def record_bot_reply(
     session: Session,
     conversation: Conversation,
@@ -127,4 +154,3 @@ def abandon_conversation(session: Session, conversation: Conversation) -> Conver
     session.commit()
     session.refresh(conversation)
     return conversation
-

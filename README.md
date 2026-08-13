@@ -167,6 +167,7 @@ from help_matcher.whatsapp import (
     create_demand,
     create_offer,
     extract_text_messages,
+    geocode_conversation_location,
     get_or_create_conversation,
     record_bot_reply,
     reply_to_message,
@@ -192,11 +193,18 @@ conversation = save_conversation_state(
     collected_data={"tags": ["water"], "original_message": incoming.text},
     llm_context_summary="User needs water; location is still missing.",
 )
+conversation = geocode_conversation_location(session, conversation)
 reply = "En que barrio o direccion necesitas ayuda?"
 reply_response = reply_to_message(incoming, reply)
 record_bot_reply(session, conversation, text=reply, meta_message_id=reply_response["messages"][0]["id"])
 
 # Once complete, create the record and mark the conversation complete.
-create_demand(session, whatsapp_bsuid=incoming.from_bsuid, original_message=incoming.text, tags=["water"])
+create_demand(
+    session,
+    whatsapp_bsuid=incoming.from_bsuid,
+    original_message=incoming.text,
+    tags=["water"],
+    geometry_geojson=conversation.collected_data.get("geometry"),
+)
 complete_conversation(session, conversation)
 ```
