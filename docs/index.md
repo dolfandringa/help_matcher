@@ -1,5 +1,9 @@
 # Help Matcher
 
+<p align="right">
+  <a href="https://github.com/dolfandringa/help_matcher">View the code on GitHub</a>
+</p>
+
 ## The problem
 During disasters, like the 2026 earthquake in Colombia, there are many people and organisations that need help, and many people who want to offer help. The problem is matching supply and demand. There are many great professionals trying their best to coordinate this, but their bandwidth is limited. It is impossible for them to be everywhere and talk to everyone. 
  
