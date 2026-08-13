@@ -73,6 +73,12 @@ def admin_only_endpoint():
 
 ## WhatsApp bot Python interface
 
+Example help-request conversation:
+
+| Initial request | Follow-up details | Registered demand |
+| --- | --- | --- |
+| ![WhatsApp help request initial message](docs/images/whatsapp-help-request-step-1.svg) | ![WhatsApp help request follow-up questions](docs/images/whatsapp-help-request-step-2.svg) | ![WhatsApp help request registered demand](docs/images/whatsapp-help-request-step-3.svg) |
+
 Bot code should import the small function API from `help_matcher.whatsapp`:
 
 ```python

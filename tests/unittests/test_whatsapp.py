@@ -132,7 +132,7 @@ def test_reply_to_message_posts_contextual_whatsapp_reply(monkeypatch) -> None:
         captured["timeout"] = timeout
         return FakeResponse()
 
-    monkeypatch.setattr("help_matcher.whatsapp.httpx.post", fake_post)
+    monkeypatch.setattr("help_matcher.whatsapp.replies.httpx.post", fake_post)
 
     result = reply_to_message(
         IncomingWhatsAppMessage(message_id="wamid.1", from_bsuid="CO.123", text="Hola"),

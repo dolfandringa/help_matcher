@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="760" viewBox="0 0 420 760" role="img" aria-labelledby="title desc">
+  <title id="title">WhatsApp bot help request step 1</title>
+  <desc id="desc">A WhatsApp-style mockup where a person asks for earthquake relief help.</desc>
+  <rect width="420" height="760" rx="34" fill="#111827"/>
+  <rect x="18" y="18" width="384" height="724" rx="28" fill="#e5ddd5"/>
+  <rect x="18" y="18" width="384" height="78" rx="28" fill="#075e54"/>
+  <rect x="18" y="70" width="384" height="26" fill="#075e54"/>
+  <circle cx="58" cy="58" r="22" fill="#dcfce7"/>
+  <text x="91" y="54" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#fff">Help Matcher</text>
+  <text x="91" y="76" font-family="Arial, sans-serif" font-size="12" fill="#d1fae5">online</text>
+  <path d="M50 52h15v12H50z" fill="#16a34a"/>
+  <path d="M54 48h7v7h-7z" fill="#16a34a"/>
+
+  <rect x="42" y="126" width="250" height="74" rx="16" fill="#fff"/>
+  <text x="61" y="153" font-family="Arial, sans-serif" font-size="15" fill="#111827">Hola, soy el bot de ayuda.</text>
+  <text x="61" y="176" font-family="Arial, sans-serif" font-size="15" fill="#111827">Cuéntame qué necesitas.</text>
+  <text x="246" y="190" font-family="Arial, sans-serif" font-size="11" fill="#6b7280">10:12</text>
+
+  <rect x="118" y="226" width="250" height="96" rx="16" fill="#dcf8c6"/>
+  <text x="139" y="254" font-family="Arial, sans-serif" font-size="15" fill="#111827">Necesitamos agua potable</text>
+  <text x="139" y="277" font-family="Arial, sans-serif" font-size="15" fill="#111827">y carpas para 12 familias</text>
+  <text x="139" y="300" font-family="Arial, sans-serif" font-size="15" fill="#111827">por el terremoto.</text>
+  <text x="323" y="313" font-family="Arial, sans-serif" font-size="11" fill="#6b7280">10:13</text>
+
+  <rect x="42" y="350" width="296" height="118" rx="16" fill="#fff"/>
+  <text x="61" y="378" font-family="Arial, sans-serif" font-size="15" fill="#111827">Entiendo. Para registrar la</text>
+  <text x="61" y="401" font-family="Arial, sans-serif" font-size="15" fill="#111827">solicitud, dime dónde están.</text>
+  <text x="61" y="424" font-family="Arial, sans-serif" font-size="15" fill="#111827">Puede ser barrio, municipio</text>
+  <text x="61" y="447" font-family="Arial, sans-serif" font-size="15" fill="#111827">o una dirección/punto cercano.</text>
+  <text x="292" y="459" font-family="Arial, sans-serif" font-size="11" fill="#6b7280">10:13</text>
+
+  <rect x="42" y="690" width="336" height="38" rx="19" fill="#fff"/>
+  <text x="67" y="714" font-family="Arial, sans-serif" font-size="14" fill="#9ca3af">Escribe un mensaje</text>
+</svg>
