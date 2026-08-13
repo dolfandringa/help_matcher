@@ -1,6 +1,10 @@
 from typing import TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from geoalchemy2.shape import to_shape
+from geojson_pydantic import Point, Polygon
+from pydantic import TypeAdapter
+from shapely.geometry import mapping
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel, select
 
@@ -10,11 +14,13 @@ from help_matcher.models import (
     Demand,
     DemandCreate,
     DemandRead,
+    DemandUser,
     OAuthIdentity,
     OAuthProvider,
     Offer,
     OfferCreate,
     OfferRead,
+    OfferUser,
     RecordStatus,
     SearchRecordType,
     SearchResult,
@@ -32,64 +38,68 @@ from help_matcher.tags import get_or_create_tag, link_tags, normalize_tag_name
 router = APIRouter()
 
 TRecord = TypeVar("TRecord", Offer, Demand)
+GeoJSONGeometry = Point | Polygon
+geojson_geometry_adapter = TypeAdapter(GeoJSONGeometry)
 
 SEARCH_SQL = {
     SearchRecordType.offer: text("""
         WITH records AS (
             SELECT
                 offer.id,
-                to_tsvector(
-                    'simple',
-                    concat_ws(
-                        ' ',
-                        offer.original_message,
-                        offer.administrative_area_name,
-                        offer.administrative_area_level,
-                        offer.address_text,
-                        string_agg(tag.name, ' ')
-                    )
-                ) AS search_vector
+                concat_ws(
+                    ' ',
+                    offer.title,
+                    offer.original_message,
+                    offer.administrative_area_name,
+                    offer.administrative_area_level,
+                    offer.address_text,
+                    string_agg(tag.name, ' ')
+                ) AS search_text
             FROM offer
             LEFT JOIN offertag ON offertag.offer_id = offer.id
             LEFT JOIN tag ON tag.id = offertag.tag_id
             GROUP BY offer.id
         ),
         query AS (
-            SELECT websearch_to_tsquery('simple', :q) AS value
+            SELECT websearch_to_tsquery('simple', :q) AS ts_value, concat('%', :q, '%') AS partial_value
         )
         SELECT records.id
         FROM records, query
-        WHERE records.search_vector @@ query.value
-        ORDER BY ts_rank(records.search_vector, query.value) DESC
+        WHERE to_tsvector('simple', records.search_text) @@ query.ts_value
+            OR records.search_text ILIKE query.partial_value
+        ORDER BY
+            ts_rank(to_tsvector('simple', records.search_text), query.ts_value) DESC,
+            records.search_text ILIKE query.partial_value DESC
         LIMIT :limit
     """),
     SearchRecordType.demand: text("""
         WITH records AS (
             SELECT
                 demand.id,
-                to_tsvector(
-                    'simple',
-                    concat_ws(
-                        ' ',
-                        demand.original_message,
-                        demand.administrative_area_name,
-                        demand.administrative_area_level,
-                        demand.address_text,
-                        string_agg(tag.name, ' ')
-                    )
-                ) AS search_vector
+                concat_ws(
+                    ' ',
+                    demand.title,
+                    demand.original_message,
+                    demand.administrative_area_name,
+                    demand.administrative_area_level,
+                    demand.address_text,
+                    string_agg(tag.name, ' ')
+                ) AS search_text
             FROM demand
             LEFT JOIN demandtag ON demandtag.demand_id = demand.id
             LEFT JOIN tag ON tag.id = demandtag.tag_id
             GROUP BY demand.id
         ),
         query AS (
-            SELECT websearch_to_tsquery('simple', :q) AS value
+            SELECT websearch_to_tsquery('simple', :q) AS ts_value, concat('%', :q, '%') AS partial_value
         )
         SELECT records.id
         FROM records, query
-        WHERE records.search_vector @@ query.value
-        ORDER BY ts_rank(records.search_vector, query.value) DESC
+        WHERE to_tsvector('simple', records.search_text) @@ query.ts_value
+            OR records.search_text ILIKE query.partial_value
+        ORDER BY
+            ts_rank(to_tsvector('simple', records.search_text), query.ts_value) DESC,
+            records.search_text ILIKE query.partial_value DESC
         LIMIT :limit
     """),
 }
@@ -116,13 +126,58 @@ def close_record(session: Session, model: type[TRecord], record_id: int) -> TRec
 
 
 def create_record(session: Session, model: type[TRecord], payload: SQLModel) -> TRecord:
-    get_user_or_404(session, payload.user_id)  # type: ignore[attr-defined]
-    record = model.model_validate(payload.model_dump(exclude={"tags"}))
+    contact_user_ids = list(
+        dict.fromkeys(
+            [
+                *getattr(payload, "contact_user_ids", []),
+                *([getattr(payload, "user_id")] if getattr(payload, "user_id", None) is not None else []),
+            ]
+        )
+    )
+    if not contact_user_ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one contact user is required")
+    contacts = [get_user_or_404(session, user_id) for user_id in contact_user_ids]
+    if getattr(payload, "phone_number", None) is not None and not contacts[0].phone_number:
+        contacts[0].phone_number = getattr(payload, "phone_number")
+        contacts[0].updated_at = utc_now()
+        session.add(contacts[0])
+        session.commit()
+
+    record = model.model_validate(payload.model_dump(exclude={"tags", "user_id", "contact_user_ids", "phone_number"}))
     session.add(record)
+    session.commit()
+    session.refresh(record)
+    for contact in contacts:
+        if isinstance(record, Offer):
+            session.add(OfferUser(offer_id=record.id, user_id=contact.id))
+        else:
+            session.add(DemandUser(demand_id=record.id, user_id=contact.id))
     session.commit()
     session.refresh(record)
     link_tags(session, record, getattr(payload, "tags", []))
     return record
+
+
+def geometry_to_geojson(geometry: object | None) -> GeoJSONGeometry | None:
+    if geometry is None:
+        return None
+    return geojson_geometry_adapter.validate_python(mapping(to_shape(geometry)))
+
+
+def offer_to_read(offer: Offer) -> OfferRead:
+    data = offer.model_dump(exclude={"geometry"})
+    data["tags"] = [TagRead.model_validate(tag) for tag in offer.tags]
+    data["contacts"] = [UserRead.model_validate(user) for user in offer.contacts]
+    data["geometry"] = geometry_to_geojson(offer.geometry)
+    return OfferRead.model_validate(data)
+
+
+def demand_to_read(demand: Demand) -> DemandRead:
+    data = demand.model_dump(exclude={"geometry"})
+    data["tags"] = [TagRead.model_validate(tag) for tag in demand.tags]
+    data["contacts"] = [UserRead.model_validate(user) for user in demand.contacts]
+    data["geometry"] = geometry_to_geojson(demand.geometry)
+    return DemandRead.model_validate(data)
 
 
 @router.get("/search", response_model=list[SearchResult])
@@ -139,7 +194,12 @@ def search_records(
         for record_id in rows:
             record = session.get(model, record_id)
             if record is not None:
-                results.append(SearchResult(record_type=current_type, record=record))
+                read_record = (
+                    offer_to_read(record)
+                    if current_type == SearchRecordType.offer
+                    else demand_to_read(record)
+                )
+                results.append(SearchResult(record_type=current_type, record=read_record))
     return results[:limit]
 
 
@@ -237,8 +297,8 @@ def update_user(user_id: int, payload: UserUpdate, session: Session = Depends(ge
 
 
 @router.post("/offers", response_model=OfferRead, status_code=status.HTTP_201_CREATED)
-def create_offer(payload: OfferCreate, session: Session = Depends(get_session)) -> Offer:
-    return create_record(session, Offer, payload)
+def create_offer(payload: OfferCreate, session: Session = Depends(get_session)) -> OfferRead:
+    return offer_to_read(create_record(session, Offer, payload))
 
 
 @router.get("/offers", response_model=list[OfferRead])
@@ -246,7 +306,7 @@ def list_offers(
     status_filter: RecordStatus | None = Query(default=None, alias="status"),
     tag: str | None = None,
     session: Session = Depends(get_session),
-) -> list[Offer]:
+) -> list[OfferRead]:
     statement = select(Offer)
     if status_filter is not None:
         statement = statement.where(Offer.status == status_filter)
@@ -254,25 +314,25 @@ def list_offers(
     if tag is not None:
         normalized = normalize_tag_name(tag)
         records = [record for record in records if any(record_tag.name == normalized for record_tag in record.tags)]
-    return records
+    return [offer_to_read(record) for record in records]
 
 
 @router.get("/offers/{offer_id}", response_model=OfferRead)
-def read_offer(offer_id: int, session: Session = Depends(get_session)) -> Offer:
+def read_offer(offer_id: int, session: Session = Depends(get_session)) -> OfferRead:
     offer = session.get(Offer, offer_id)
     if offer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found")
-    return offer
+    return offer_to_read(offer)
 
 
 @router.post("/offers/{offer_id}/close", response_model=OfferRead, dependencies=[Depends(require_admin)])
-def close_offer(offer_id: int, session: Session = Depends(get_session)) -> Offer:
-    return close_record(session, Offer, offer_id)
+def close_offer(offer_id: int, session: Session = Depends(get_session)) -> OfferRead:
+    return offer_to_read(close_record(session, Offer, offer_id))
 
 
 @router.post("/demands", response_model=DemandRead, status_code=status.HTTP_201_CREATED)
-def create_demand(payload: DemandCreate, session: Session = Depends(get_session)) -> Demand:
-    return create_record(session, Demand, payload)
+def create_demand(payload: DemandCreate, session: Session = Depends(get_session)) -> DemandRead:
+    return demand_to_read(create_record(session, Demand, payload))
 
 
 @router.get("/demands", response_model=list[DemandRead])
@@ -280,7 +340,7 @@ def list_demands(
     status_filter: RecordStatus | None = Query(default=None, alias="status"),
     tag: str | None = None,
     session: Session = Depends(get_session),
-) -> list[Demand]:
+) -> list[DemandRead]:
     statement = select(Demand)
     if status_filter is not None:
         statement = statement.where(Demand.status == status_filter)
@@ -288,17 +348,17 @@ def list_demands(
     if tag is not None:
         normalized = normalize_tag_name(tag)
         records = [record for record in records if any(record_tag.name == normalized for record_tag in record.tags)]
-    return records
+    return [demand_to_read(record) for record in records]
 
 
 @router.get("/demands/{demand_id}", response_model=DemandRead)
-def read_demand(demand_id: int, session: Session = Depends(get_session)) -> Demand:
+def read_demand(demand_id: int, session: Session = Depends(get_session)) -> DemandRead:
     demand = session.get(Demand, demand_id)
     if demand is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Demand not found")
-    return demand
+    return demand_to_read(demand)
 
 
 @router.post("/demands/{demand_id}/close", response_model=DemandRead, dependencies=[Depends(require_admin)])
-def close_demand(demand_id: int, session: Session = Depends(get_session)) -> Demand:
-    return close_record(session, Demand, demand_id)
+def close_demand(demand_id: int, session: Session = Depends(get_session)) -> DemandRead:
+    return demand_to_read(close_record(session, Demand, demand_id))

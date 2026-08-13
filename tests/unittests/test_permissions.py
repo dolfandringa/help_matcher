@@ -1,21 +1,15 @@
 from fastapi.testclient import TestClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
 from help_matcher.auth import hash_password, token_for_user
 from help_matcher.database import get_session
 from help_matcher.main import app
 from help_matcher.models import Offer, User, UserRole
+from db import create_postgres_test_engine
 
 
 def make_engine():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
-    return engine
+    return create_postgres_test_engine()
 
 
 def test_create_user_requires_admin_token() -> None:
@@ -119,7 +113,7 @@ def test_close_offer_requires_admin_token() -> None:
         session.commit()
         session.refresh(admin)
         session.refresh(user)
-        offer = Offer(user_id=user.id, original_message="Can help")
+        offer = Offer(title="Can help", original_message="Can help")
         session.add(offer)
         session.commit()
         session.refresh(offer)

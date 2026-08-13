@@ -13,10 +13,12 @@ from help_matcher.models.help_records import (
     DemandCreate,
     DemandRead,
     DemandTag,
+    DemandUser,
     Offer,
     OfferCreate,
     OfferRead,
     OfferTag,
+    OfferUser,
     SearchResult,
     Tag,
     TagCreate,
@@ -46,6 +48,7 @@ __all__ = [
     "DemandCreate",
     "DemandRead",
     "DemandTag",
+    "DemandUser",
     "LoginRequest",
     "OAuthIdentity",
     "OAuthIdentityCreate",
@@ -55,6 +58,7 @@ __all__ = [
     "OfferCreate",
     "OfferRead",
     "OfferTag",
+    "OfferUser",
     "RecordStatus",
     "SearchRecordType",
     "SearchResult",
@@ -69,4 +73,3 @@ __all__ = [
     "UserUpdate",
     "utc_now",
 ]
-

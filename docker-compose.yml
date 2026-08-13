@@ -1,6 +1,8 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      target: combined
     pull_policy: build
     depends_on:
       postgres:
@@ -28,7 +30,7 @@ services:
     command: ["serve", "--reload"]
 
   postgres:
-    image: postgres:16-alpine
+    image: postgis/postgis:16-3.4-alpine
     env_file:
       - .env
     environment:

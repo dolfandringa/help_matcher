@@ -1,20 +1,14 @@
 from fastapi.testclient import TestClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
 from help_matcher.database import get_session
 from help_matcher.main import app
 from help_matcher.models import User
+from db import create_postgres_test_engine
 
 
 def make_engine():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
-    return engine
+    return create_postgres_test_engine()
 
 
 def test_tag_endpoints_and_offer_tags() -> None:
@@ -39,6 +33,7 @@ def test_tag_endpoints_and_offer_tags() -> None:
             "/offers",
             json={
                 "user_id": user_id,
+                "title": "Botiquines disponibles",
                 "original_message": "Tengo botiquines.",
                 "tags": ["Medical Supplies", "medicine"],
             },
@@ -53,4 +48,3 @@ def test_tag_endpoints_and_offer_tags() -> None:
         assert [tag["name"] for tag in tags.json()] == ["medical supplies", "medicine"]
     finally:
         app.dependency_overrides.clear()
-

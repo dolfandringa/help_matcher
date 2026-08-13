@@ -1,17 +1,12 @@
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
 from help_matcher.auth import hash_password, login, login_form, oauth_login, record_oauth_identity, verify_password
 from help_matcher.models import LoginRequest, OAuthIdentityCreate, OAuthLoginRequest, OAuthProvider, User, UserRole
+from db import create_postgres_test_engine
 
 
 def make_session() -> Session:
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
+    engine = create_postgres_test_engine()
     return Session(engine)
 
 

@@ -1,8 +1,12 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from help_matcher.models import Demand, Offer, RecordStatus, User, UserRole, utc_now
+from help_matcher.models import Demand, DemandUser, Offer, OfferUser, RecordStatus, User, UserRole, utc_now
 from help_matcher.tags import link_tags
+
+
+def _title_from_message(message: str) -> str:
+    return message.strip()[:200]
 
 
 def get_or_create_user(
@@ -47,6 +51,7 @@ def create_offer(
     *,
     whatsapp_bsuid: str,
     original_message: str,
+    title: str | None = None,
     whatsapp_name: str | None = None,
     phone_number: str | None = None,
     tags: list[str] | None = None,
@@ -64,15 +69,17 @@ def create_offer(
         phone_number=phone_number,
     )
     offer = Offer(
-        user_id=user.id,
+        title=title or _title_from_message(original_message),
         original_message=original_message,
-        phone_number=phone_number or user.phone_number,
         location_text=location_text,
         administrative_area_name=administrative_area_name,
         administrative_area_level=administrative_area_level,
         address_text=address_text,
     )
     session.add(offer)
+    session.commit()
+    session.refresh(offer)
+    session.add(OfferUser(offer_id=offer.id, user_id=user.id))
     session.commit()
     session.refresh(offer)
     link_tags(session, offer, tags or [])
@@ -84,6 +91,7 @@ def create_demand(
     *,
     whatsapp_bsuid: str,
     original_message: str,
+    title: str | None = None,
     whatsapp_name: str | None = None,
     phone_number: str | None = None,
     tags: list[str] | None = None,
@@ -101,15 +109,17 @@ def create_demand(
         phone_number=phone_number,
     )
     demand = Demand(
-        user_id=user.id,
+        title=title or _title_from_message(original_message),
         original_message=original_message,
-        phone_number=phone_number or user.phone_number,
         location_text=location_text,
         administrative_area_name=administrative_area_name,
         administrative_area_level=administrative_area_level,
         address_text=address_text,
     )
     session.add(demand)
+    session.commit()
+    session.refresh(demand)
+    session.add(DemandUser(demand_id=demand.id, user_id=user.id))
     session.commit()
     session.refresh(demand)
     link_tags(session, demand, tags or [])
@@ -121,7 +131,7 @@ def close_offer(session: Session, *, whatsapp_bsuid: str, offer_id: int) -> Offe
 
     user = _get_user_or_404(session, whatsapp_bsuid)
     offer = session.get(Offer, offer_id)
-    if offer is None or offer.user_id != user.id:
+    if offer is None or not any(contact.id == user.id for contact in offer.contacts):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found")
     offer.status = RecordStatus.closed
     offer.closed_at = utc_now()
@@ -137,7 +147,7 @@ def close_demand(session: Session, *, whatsapp_bsuid: str, demand_id: int) -> De
 
     user = _get_user_or_404(session, whatsapp_bsuid)
     demand = session.get(Demand, demand_id)
-    if demand is None or demand.user_id != user.id:
+    if demand is None or not any(contact.id == user.id for contact in demand.contacts):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Demand not found")
     demand.status = RecordStatus.closed
     demand.closed_at = utc_now()
@@ -153,4 +163,3 @@ def _get_user_or_404(session: Session, whatsapp_bsuid: str) -> User:
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="WhatsApp user not found")
     return user
-

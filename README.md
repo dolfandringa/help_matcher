@@ -43,7 +43,55 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Docker Compose uses the same `.env` values for both the `postgres` service and the API configuration. Inside Compose, the API overrides only `POSTGRES_HOST=postgres` so it can reach the database container by service name.
+Docker Compose uses the same `.env` values for both the `postgres` service and the API configuration. Inside Compose, the API overrides only `POSTGRES_HOST=postgres` so it can reach the database container by service name. The local database runs the PostGIS image, so future geography columns can store points, polygons, and distance-queryable locations.
+
+## Frontend
+
+The React frontend lives in `src/frontend` and uses Vite, TypeScript, MUI, Zustand, and `react-map-gl` with MapLibre.
+
+```bash
+npm install
+npm run frontend:dev
+```
+
+Set `VITE_API_BASE_URL` when the API is not on the same origin. During local development, Vite proxies `/search` to `http://localhost:8000`.
+
+To serve the frontend from FastAPI/Uvicorn instead of a separate Vite process, build it first and start the backend:
+
+```bash
+npm run frontend:build
+poetry run serve
+```
+
+FastAPI serves the compiled Vite app from `dist/`, including client-side routes through the SPA fallback. Docker Compose uses the `combined` Docker build target, which builds the frontend automatically and serves it from the same API container.
+
+The same Dockerfile also has a backend-only target for deployments where the frontend is hosted separately:
+
+```bash
+docker build --target backend -t help-matcher-api .
+```
+
+Use the combined target when you want one container serving both API and frontend:
+
+```bash
+docker build --target combined -t help-matcher-web .
+```
+
+### Frontend/backend routes
+
+When served by FastAPI/Uvicorn, the frontend and backend share one origin:
+
+| Route | Served by | Purpose |
+| --- | --- | --- |
+| `/` | FastAPI static frontend fallback | Loads the compiled React single-page app from `dist/index.html`. |
+| `/assets/*` | FastAPI static files | Serves Vite-built JavaScript, CSS, and other frontend assets from `dist/assets`. |
+| `/search?q=water&record_type=demand&record_type=offer` | FastAPI API | Used by the React search page to fetch matching demands/offers. |
+| `/offers`, `/offers/{id}` | FastAPI API | Offer API endpoints, available to frontend code as same-origin requests. |
+| `/demands`, `/demands/{id}` | FastAPI API | Demand API endpoints, available to frontend code as same-origin requests. |
+| `/auth/*`, `/users/*`, `/tags/*`, `/webhooks/*`, `/health`, `/docs`, `/openapi.json` | FastAPI API | Backend/admin/webhook/docs routes. |
+| Any other non-API path, for example `/map` | FastAPI static frontend fallback | Returns `dist/index.html` so React can handle future client-side routes. |
+
+During frontend-only development, `npm run frontend:dev` starts Vite on port 5173. Vite proxies `/search` to `http://localhost:8000`, so the search page can call `/search` without hardcoding the backend origin. Set `VITE_API_BASE_URL` if the API lives on a different origin.
 
 ## Admin users
 
@@ -54,6 +102,15 @@ poetry run create_admin --username test --password test
 ```
 
 Use `--update-existing` to reset the password for an existing admin.
+
+Load sample offers and demands for local UI testing with:
+
+```bash
+poetry run load_sample_data
+```
+
+Use `--clear-existing` to replace previously loaded sample records.
+The sample records are based on the request screenshots in `docs/images/sample_help_requests/`, with placeholder phone numbers for safety.
 
 ## API
 

@@ -1,4 +1,13 @@
-FROM python:3.12-slim AS runtime
+FROM node:22-slim AS frontend
+
+WORKDIR /app
+
+COPY package.json package-lock.json* tsconfig.json tsconfig.node.json vite.config.ts index.html ./
+COPY src/frontend ./src/frontend
+RUN npm install && npm run frontend:build
+
+
+FROM python:3.12-slim AS backend
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -25,3 +34,8 @@ EXPOSE 8000
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["serve"]
+
+
+FROM backend AS combined
+
+COPY --from=frontend /app/dist ./dist

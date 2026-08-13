@@ -42,6 +42,7 @@ def test_search_records_across_types() -> None:
             "/offers",
             json={
                 "user_id": user.id,
+                "title": "Clean water available",
                 "original_message": "We can bring clean water",
                 "administrative_area_name": "Chapinero",
                 "address_text": "Main square",
@@ -52,7 +53,8 @@ def test_search_records_across_types() -> None:
             "/demands",
             json={
                 "user_id": user.id,
-                "original_message": "Need medicine urgently",
+                "title": "Medicine and bebidas needed",
+                "original_message": "Need medicine and bebidas urgently",
                 "administrative_area_name": "Laureles",
                 "tags": ["medicine"],
             },
@@ -60,13 +62,17 @@ def test_search_records_across_types() -> None:
 
         water = client.get("/search", params=[("q", "water"), ("record_type", "offer")])
         medicine = client.get("/search", params=[("q", "medicine"), ("record_type", "offer"), ("record_type", "demand")])
+        bebida = client.get("/search", params=[("q", "bebida"), ("record_type", "demand")])
 
         assert water.status_code == 200
         water_results = [result for result in water.json() if result["record"]["original_message"] == "We can bring clean water"]
         assert [result["record_type"] for result in water_results] == ["offer"]
         assert medicine.status_code == 200
-        medicine_results = [result for result in medicine.json() if result["record"]["original_message"] == "Need medicine urgently"]
+        medicine_results = [result for result in medicine.json() if result["record"]["original_message"] == "Need medicine and bebidas urgently"]
         assert [result["record_type"] for result in medicine_results] == ["demand"]
+        assert bebida.status_code == 200
+        bebida_results = [result for result in bebida.json() if result["record"]["original_message"] == "Need medicine and bebidas urgently"]
+        assert [result["record_type"] for result in bebida_results] == ["demand"]
     finally:
         app.dependency_overrides.pop(get_session, None)
         clear_search_test_data()

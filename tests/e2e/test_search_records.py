@@ -56,6 +56,7 @@ def multiple_offers_and_demands() -> None:
         "/offers",
         json={
             "user_id": user_id,
+            "title": "Clean water available",
             "original_message": "Clean water available",
             "administrative_area_name": "Chapinero",
             "administrative_area_level": "locality",
@@ -67,6 +68,7 @@ def multiple_offers_and_demands() -> None:
         "/offers",
         json={
             "user_id": user_id,
+            "title": "Blankets available",
             "original_message": "Blankets available",
             "administrative_area_name": "Laureles",
             "administrative_area_level": "barrio",
@@ -78,6 +80,7 @@ def multiple_offers_and_demands() -> None:
         "/demands",
         json={
             "user_id": user_id,
+            "title": "Need water filters",
             "original_message": "Need water filters",
             "administrative_area_name": "Chapinero",
             "administrative_area_level": "locality",
@@ -89,6 +92,7 @@ def multiple_offers_and_demands() -> None:
         "/demands",
         json={
             "user_id": user_id,
+            "title": "Need medical supplies",
             "original_message": "Need medical supplies",
             "administrative_area_name": "Centro",
             "administrative_area_level": "municipality",
@@ -139,4 +143,3 @@ def search_includes_demand(search_results: list[dict[str, Any]]) -> None:
 @then('the search results do not include "Need medical supplies"')
 def search_excludes_unmatched_demand(search_results: list[dict[str, Any]]) -> None:
     assert all(result["record"]["original_message"] != "Need medical supplies" for result in search_results)
-

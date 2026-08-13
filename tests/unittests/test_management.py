@@ -1,10 +1,10 @@
-from sqlalchemy.pool import StaticPool
 from pydantic_settings import CliApp
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
 from help_matcher.auth import verify_password
 from help_matcher.management import CreateAdminSettings, ServeSettings
 from help_matcher.models import User, UserRole
+from db import create_postgres_test_engine
 
 
 def test_serve_settings_starts_uvicorn_with_defaults(monkeypatch) -> None:
@@ -28,12 +28,7 @@ def test_serve_settings_starts_uvicorn_with_defaults(monkeypatch) -> None:
 
 
 def test_create_admin_settings_creates_admin(monkeypatch, capsys) -> None:
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
+    engine = create_postgres_test_engine()
     monkeypatch.setattr("help_matcher.management.engine", engine)
 
     CliApp.run(CreateAdminSettings, cli_args=["--username", "test", "--password", "test"])
