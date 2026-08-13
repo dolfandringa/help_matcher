@@ -1,13 +1,29 @@
 # Help Matcher
 
-FastAPI/Postgres backend and LLM WhatsApp bot/interface to match earthquake-relief demand/supply. Allow people offering help and people needing help to find each other easily, without adding admin overhead on forms/apps/etc. Using an WhatsApp LLM bot people can interface with the system and tell us what they're offering/need and the backend will log that. Goal is to provide a webinterface to allow people to search for offers/demands and get in contact with each other that way. I would also love to have an auto-matching system in there that automatically suggests to people who could help them or who they could help straight away.
-And making AI generated images they can post on social media to get attention is also a nice feature.
+## The problem
+During disasters, like the 2026 earthquake in Colombia, there are many people and organisations that need help, and many people who want to offer help. The problem is matching supply and demand. There are many great professionals trying their best to coordinate this, but their bandwidth is limited. It is impossible for them to be everywhere and talk to everyone. 
+ 
+## The solution
+Match supply and demand more organically, using AI. The goal here is to allow people that need help, talk to a very simple AI Chatbot where they can say what they need. The bot gathers all information from the conversation and logs the help demand. The same chatbot can be used by people who have help to offer, and lodge their offer. A webinterface then allows people (mostly the people offering help as they are in a better situation) to search for help requests by location, type of help needed, etc, and directly get the contact details of the people that need help. Ideally the chatbot also should already suggest a number of matches. 
+
+## Requirements
+* VERY easy to use without red tape or complex forms to fill in.
+* Use the interfaces people are already used to (WhatsApp initially)
+* Allow people to contact each other directly
+* Allow people to find matches by location/distance so they can offer their help where its easiest for them
 
 Example help-request conversation:
 
 | Initial request | Follow-up details | Registered demand |
 | --- | --- | --- |
 | ![WhatsApp help request initial message](docs/images/whatsapp-help-request-step-1.svg) | ![WhatsApp help request follow-up questions](docs/images/whatsapp-help-request-step-2.svg) | ![WhatsApp help request registered demand](docs/images/whatsapp-help-request-step-3.svg) |
+
+
+
+# Technical docs
+
+FastAPI/Postgres backend and LLM WhatsApp bot/interface to match earthquake-relief demand/supply. Allow people offering help and people needing help to find each other easily, without adding admin overhead on forms/apps/etc. Using an WhatsApp LLM bot people can interface with the system and tell us what they're offering/need and the backend will log that. Goal is to provide a webinterface to allow people to search for offers/demands and get in contact with each other that way. I would also love to have an auto-matching system in there that automatically suggests to people who could help them or who they could help straight away.
+And making AI generated images they can post on social media to get attention is also a nice feature.
 
 
 ## Run locally
