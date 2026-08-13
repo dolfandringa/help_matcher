@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -58,6 +59,10 @@ SEARCH_SQL = {
             FROM offer
             LEFT JOIN offertag ON offertag.offer_id = offer.id
             LEFT JOIN tag ON tag.id = offertag.tag_id
+            WHERE (
+                CAST(:updated_since AS TIMESTAMP) IS NULL
+                OR COALESCE(offer.updated_at, offer.created_at) >= CAST(:updated_since AS TIMESTAMP)
+            )
             GROUP BY offer.id
         ),
         query AS (
@@ -88,6 +93,10 @@ SEARCH_SQL = {
             FROM demand
             LEFT JOIN demandtag ON demandtag.demand_id = demand.id
             LEFT JOIN tag ON tag.id = demandtag.tag_id
+            WHERE (
+                CAST(:updated_since AS TIMESTAMP) IS NULL
+                OR COALESCE(demand.updated_at, demand.created_at) >= CAST(:updated_since AS TIMESTAMP)
+            )
             GROUP BY demand.id
         ),
         query AS (
@@ -185,11 +194,15 @@ def search_records(
     q: str = Query(min_length=1),
     record_type: list[SearchRecordType] = Query(default=[SearchRecordType.demand, SearchRecordType.offer]),
     limit: int = Query(default=20, ge=1, le=100),
+    updated_since: datetime | None = None,
     session: Session = Depends(get_session),
 ) -> list[SearchResult]:
     results: list[SearchResult] = []
     for current_type in dict.fromkeys(record_type):
-        rows = session.exec(SEARCH_SQL[current_type], params={"q": q, "limit": limit}).all()
+        rows = session.exec(
+            SEARCH_SQL[current_type],
+            params={"q": q, "limit": limit, "updated_since": updated_since},
+        ).all()
         model = Offer if current_type == SearchRecordType.offer else Demand
         for record_id in rows:
             record = session.get(model, record_id)

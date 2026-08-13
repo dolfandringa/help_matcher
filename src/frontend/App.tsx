@@ -6,10 +6,14 @@ import {
   Button,
   Chip,
   CircularProgress,
+  FormControl,
   FormControlLabel,
+  InputLabel,
+  MenuItem,
   Paper,
   Radio,
   RadioGroup,
+  Select,
   Stack,
   TextField,
   Toolbar,
@@ -23,7 +27,7 @@ import type { StyleSpecification } from "maplibre-gl";
 import Map, { Layer, Marker, NavigationControl, Source, type MapRef } from "react-map-gl/maplibre";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { resultKey, useSearchStore } from "./store";
-import type { MapBounds, RecordType, SearchResult } from "./types";
+import type { AgeFilter, MapBounds, RecordType, SearchResult } from "./types";
 
 const mapStyle: StyleSpecification = {
   version: 8,
@@ -59,6 +63,33 @@ function resultLocation(result: SearchResult) {
     result.record.location_text ||
     "Location not specified"
   );
+}
+
+function recordTimestamp(result: SearchResult) {
+  return result.record.updated_at || result.record.created_at;
+}
+
+function parseBackendUtcTimestamp(value: string) {
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+  return new Date(hasTimezone ? value : `${value}Z`);
+}
+
+function formatRelativeTime(value: string) {
+  const timestamp = parseBackendUtcTimestamp(value).getTime();
+  const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (diffSeconds < 60) {
+    return "just now";
+  }
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
 }
 
 function polygonFeatures(results: SearchResult[]): FeatureCollection {
@@ -99,14 +130,42 @@ function resultInBounds(result: SearchResult, bounds?: MapBounds) {
   );
 }
 
+function resultMatchesAgeFilter(result: SearchResult, ageFilter: AgeFilter) {
+  if (ageFilter === "any") {
+    return true;
+  }
+  const maxAgeMs = {
+    "1h": 60 * 60 * 1000,
+    "6h": 6 * 60 * 60 * 1000,
+    "24h": 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+  }[ageFilter];
+  return Date.now() - parseBackendUtcTimestamp(recordTimestamp(result)).getTime() <= maxAgeMs;
+}
+
 function useVisibleResults() {
   const results = useSearchStore((state) => state.results);
   const mapBounds = useSearchStore((state) => state.mapBounds);
-  return useMemo(() => results.filter((result) => resultInBounds(result, mapBounds)), [mapBounds, results]);
+  const ageFilter = useSearchStore((state) => state.ageFilter);
+  return useMemo(
+    () => results.filter((result) => resultInBounds(result, mapBounds) && resultMatchesAgeFilter(result, ageFilter)),
+    [ageFilter, mapBounds, results],
+  );
 }
 
 function SearchPanel() {
-  const { query, recordTypes, isLoading, error, setQuery, setRecordTypes, loadDefaultRecords, search } = useSearchStore();
+  const {
+    ageFilter,
+    query,
+    recordTypes,
+    isLoading,
+    error,
+    setAgeFilter,
+    setQuery,
+    setRecordTypes,
+    loadDefaultRecords,
+    search,
+  } = useSearchStore();
 
   const selectType = (recordType: RecordType) => {
     const selectedTypes = [recordType];
@@ -115,6 +174,15 @@ function SearchPanel() {
       void loadDefaultRecords(selectedTypes);
     } else {
       void search(selectedTypes);
+    }
+  };
+
+  const selectAgeFilter = (ageFilter: AgeFilter) => {
+    setAgeFilter(ageFilter);
+    if (query.trim().length === 0) {
+      void loadDefaultRecords(recordTypes);
+    } else {
+      void search(recordTypes, ageFilter);
     }
   };
 
@@ -159,6 +227,21 @@ function SearchPanel() {
             label="Offers"
           />
         </RadioGroup>
+        <FormControl fullWidth size="small">
+          <InputLabel id="age-filter-label">Post age</InputLabel>
+          <Select
+            labelId="age-filter-label"
+            label="Post age"
+            value={ageFilter}
+            onChange={(event) => selectAgeFilter(event.target.value as AgeFilter)}
+          >
+            <MenuItem value="any">Any time</MenuItem>
+            <MenuItem value="1h">Last hour</MenuItem>
+            <MenuItem value="6h">Last 6 hours</MenuItem>
+            <MenuItem value="24h">Last 24 hours</MenuItem>
+            <MenuItem value="7d">Last 7 days</MenuItem>
+          </Select>
+        </FormControl>
         {error ? <Alert severity="error">{error}</Alert> : null}
       </Stack>
     </Paper>
@@ -203,6 +286,9 @@ function ResultsList() {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {resultLocation(result)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Updated {formatRelativeTime(recordTimestamp(result))}
                 </Typography>
                 {selected ? (
                   <>

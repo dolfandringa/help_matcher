@@ -1,4 +1,5 @@
 export type RecordType = "offer" | "demand";
+export type AgeFilter = "any" | "1h" | "6h" | "24h" | "7d";
 
 export type GeoJsonPoint = {
   type: "Point";

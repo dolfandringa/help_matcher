@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import { listOpenRecords, searchHelpRecords } from "./api";
-import type { MapBounds, RecordType, SearchResult, ViewState } from "./types";
+import type { AgeFilter, MapBounds, RecordType, SearchResult, ViewState } from "./types";
 
 type SearchState = {
   query: string;
   recordTypes: RecordType[];
+  ageFilter: AgeFilter;
   results: SearchResult[];
   selectedResultId?: string;
   viewState: ViewState;
@@ -13,13 +14,14 @@ type SearchState = {
   isLoading: boolean;
   error?: string;
   setQuery: (query: string) => void;
+  setAgeFilter: (ageFilter: AgeFilter) => void;
   setRecordTypes: (recordTypes: RecordType[]) => void;
   setSelectedResultId: (id?: string) => void;
   setViewState: (viewState: ViewState) => void;
   setMapBounds: (mapBounds: MapBounds) => void;
   useDeviceLocation: () => void;
   loadDefaultRecords: (recordTypes?: RecordType[]) => Promise<void>;
-  search: (recordTypesOverride?: RecordType[]) => Promise<void>;
+  search: (recordTypesOverride?: RecordType[], ageFilterOverride?: AgeFilter) => Promise<void>;
 };
 
 const colombiaView: ViewState = {
@@ -33,10 +35,12 @@ export const resultKey = (result: SearchResult) => `${result.record_type}-${resu
 export const useSearchStore = create<SearchState>((set, get) => ({
   query: "",
   recordTypes: ["demand"],
+  ageFilter: "any",
   results: [],
   viewState: colombiaView,
   isLoading: false,
   setQuery: (query) => set({ query }),
+  setAgeFilter: (ageFilter) => set({ ageFilter }),
   setRecordTypes: (recordTypes) => set({ recordTypes }),
   setSelectedResultId: (selectedResultId) => set({ selectedResultId }),
   setViewState: (viewState) => set({ viewState }),
@@ -76,9 +80,10 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       });
     }
   },
-  search: async (recordTypesOverride) => {
-    const { query, recordTypes, loadDefaultRecords } = get();
+  search: async (recordTypesOverride, ageFilterOverride) => {
+    const { ageFilter, query, recordTypes, loadDefaultRecords } = get();
     const selectedRecordTypes = recordTypesOverride ?? recordTypes;
+    const selectedAgeFilter = ageFilterOverride ?? ageFilter;
     if (query.trim().length === 0) {
       await loadDefaultRecords(selectedRecordTypes);
       return;
@@ -86,7 +91,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
 
     set({ isLoading: true, error: undefined });
     try {
-      const results = await searchHelpRecords(query.trim(), selectedRecordTypes);
+      const results = await searchHelpRecords(query.trim(), selectedRecordTypes, selectedAgeFilter);
       set({ results, isLoading: false, selectedResultId: results[0] ? resultKey(results[0]) : undefined });
     } catch (error) {
       set({
