@@ -351,8 +351,8 @@ class LoadSampleDataSettings(BaseSettings):
                         administrative_area_level="corregimiento",
                         address_text="Corregimiento de La Paz, Cali",
                         geometry=sample_geometry(
-                            administrative_area_name="La Paz",
-                            address_text="Corregimiento de La Paz, Cali",
+                            administrative_area_name="Corregimiento La Paz, Cali",
+                            address_text="",
                             fallback_wkt="POINT(-76.5857 3.5090)",
                         ),
                     ),
