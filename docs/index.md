@@ -39,7 +39,20 @@ FastAPI/Postgres backend and LLM WhatsApp bot/interface to match earthquake-reli
 And making AI generated images they can post on social media to get attention is also a nice feature.
 
 
-## Run locally
+## Run locally with Docker Compose
+
+The quickest way to run the whole app is Docker Compose. It builds the React frontend, serves it from the FastAPI container, and starts the PostGIS database:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+After it starts, open `http://localhost:8000/`. The frontend and backend share the same origin; you do not need to build or run them separately for normal local use.
+
+Docker Compose uses the same `.env` values for both the `postgres` service and the API configuration. Inside Compose, the API overrides only `POSTGRES_HOST=postgres` so it can reach the database container by service name. The local database runs the PostGIS image, so geography columns can store points, polygons, and distance-queryable locations.
+
+## Run backend only
 
 ```bash
 poetry install
@@ -47,18 +60,9 @@ cp .env.example .env
 poetry run serve --reload
 ```
 
-Database connection settings are built from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`, and `POSTGRES_DB` in `.env`. `DATABASE_URL` can still be set as an explicit override when needed.
+Use this when you want to run the API directly with Poetry, for example while developing backend code. Database connection settings are built from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`, and `POSTGRES_DB` in `.env`. `DATABASE_URL` can still be set as an explicit override when needed.
 
-## Docker
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Docker Compose uses the same `.env` values for both the `postgres` service and the API configuration. Inside Compose, the API overrides only `POSTGRES_HOST=postgres` so it can reach the database container by service name. The local database runs the PostGIS image, so future geography columns can store points, polygons, and distance-queryable locations.
-
-## Frontend
+## Frontend development
 
 The React frontend lives in `src/frontend` and uses Vite, TypeScript, MUI, Zustand, and `react-map-gl` with MapLibre.
 
@@ -69,14 +73,14 @@ npm run frontend:dev
 
 Set `VITE_API_BASE_URL` when the API is not on the same origin. During local development, Vite proxies `/search` to `http://localhost:8000`.
 
-To serve the frontend from FastAPI/Uvicorn instead of a separate Vite process, build it first and start the backend:
+Separate frontend/backend processes are optional. To serve the frontend from FastAPI/Uvicorn without Docker Compose, build it first and start the backend:
 
 ```bash
 npm run frontend:build
 poetry run serve
 ```
 
-FastAPI serves the compiled Vite app from `dist/`, including client-side routes through the SPA fallback. Docker Compose uses the `combined` Docker build target, which builds the frontend automatically and serves it from the same API container.
+FastAPI serves the compiled Vite app from `dist/`, including client-side routes through the SPA fallback. Docker Compose already does this automatically using the `combined` Docker build target, so the manual frontend build is only needed outside Compose.
 
 The same Dockerfile also has a backend-only target for deployments where the frontend is hosted separately:
 
