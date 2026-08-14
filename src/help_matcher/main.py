@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from help_matcher.api import router as api_router
 from help_matcher.auth import router as auth_router
+from help_matcher.config import get_settings
 from help_matcher.webhooks import router as webhook_router
 
 
@@ -26,6 +27,10 @@ app = FastAPI(
 app.include_router(api_router)
 app.include_router(auth_router)
 app.include_router(webhook_router)
+if get_settings().environment == "development":
+    from help_matcher.local_whatsapp import router as local_whatsapp_router
+
+    app.include_router(local_whatsapp_router)
 
 
 @app.get("/health")

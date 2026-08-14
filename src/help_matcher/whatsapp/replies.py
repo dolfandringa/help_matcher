@@ -21,7 +21,7 @@ def reply_to_message(
         raise RuntimeError("META_PHONE_NUMBER_ID is not configured")
 
     url = (
-        f"https://graph.facebook.com/{current_settings.meta_api_version}/"
+        f"{current_settings.meta_api_base_url.rstrip('/')}/{current_settings.meta_api_version}/"
         f"{current_settings.meta_phone_number_id}/messages"
     )
     response = httpx.post(
@@ -42,4 +42,3 @@ def reply_to_message(
     )
     response.raise_for_status()
     return response.json()
-

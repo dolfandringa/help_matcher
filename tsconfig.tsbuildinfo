@@ -1,1 +1,1 @@
-{"root":["./src/frontend/App.tsx","./src/frontend/api.ts","./src/frontend/main.tsx","./src/frontend/store.ts","./src/frontend/types.ts","./src/frontend/vite-env.d.ts"],"version":"5.9.3"}
+{"root":["./src/frontend/App.tsx","./src/frontend/LocalWhatsAppPage.tsx","./src/frontend/api.ts","./src/frontend/main.tsx","./src/frontend/store.ts","./src/frontend/types.ts","./src/frontend/vite-env.d.ts"],"version":"5.9.3"}

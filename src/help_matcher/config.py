@@ -11,12 +11,14 @@ class Settings(BaseSettings):
     postgres_port: int = Field(default=5432, validation_alias="POSTGRES_PORT")
     postgres_db: str = Field(default="help_matcher", validation_alias="POSTGRES_DB")
     database_url_override: str | None = Field(default=None, validation_alias="DATABASE_URL")
+    bot_name: str = Field(default="Help Matcher Bot", validation_alias="BOT_NAME")
     bot_client_id: str = Field(default="", validation_alias="BOT_CLIENT_ID")
     bot_client_secret: str = Field(default="", validation_alias="BOT_CLIENT_SECRET")
     meta_webhook_verify_token: str = Field(default="", validation_alias="META_WEBHOOK_VERIFY_TOKEN")
     meta_access_token: str = Field(default="", validation_alias="META_ACCESS_TOKEN")
     meta_phone_number_id: str = Field(default="", validation_alias="META_PHONE_NUMBER_ID")
     meta_api_version: str = Field(default="v20.0", validation_alias="META_API_VERSION")
+    meta_api_base_url: str = Field(default="https://graph.facebook.com", validation_alias="META_API_BASE_URL")
     environment: str = Field(default="development", validation_alias="ENVIRONMENT")
     jwt_secret_key: str = Field(
         default="change-me-in-production-at-least-32-chars",

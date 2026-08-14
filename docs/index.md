@@ -31,6 +31,34 @@ Frontend search and map prototype:
 
 <video src="images/ui_example.mp4" controls width="100%"></video>
 
+## Local WhatsApp chatbot demo
+
+When running in development, the app includes a local WhatsApp simulator at:
+
+```text
+http://localhost:8000/local-whatsapp
+```
+
+Use it to test the chatbot flow without Meta credentials, webhook signatures, or a public callback URL. The page lets you set the fake user's WhatsApp BSUID, phone number, and profile name, then sends each message to the backend as a Meta-shaped webhook payload. The simulator uses the WhatsApp BSUID to isolate conversations, so two browser tabs with different BSUIDs only receive their own messages.
+
+Local simulator endpoints are only mounted when `ENVIRONMENT=development`:
+
+| Route | Purpose |
+| --- | --- |
+| `/local-whatsapp` | Browser chat UI for local chatbot testing. |
+| `/local/whatsapp/ws/{whatsapp_bsuid}` | Websocket used by the UI to receive messages for one simulated WhatsApp user. |
+| `/local/whatsapp/webhook` | Unsigned fake WhatsApp webhook endpoint for incoming messages. |
+| `/local/whatsapp/graph/{api_version}/{phone_number_id}/messages` | Fake Graph API endpoint used to display bot replies locally. |
+
+For local demos, `.env.example` points `META_API_BASE_URL` at the fake Graph endpoint and exposes `BOT_NAME` for the sender label:
+
+```env
+BOT_NAME=Help Matcher Bot
+META_API_BASE_URL=http://localhost:8000/local/whatsapp/graph
+```
+
+Use `https://graph.facebook.com` for `META_API_BASE_URL` when switching to the real Meta WhatsApp Cloud API.
+
 
 
 # Technical docs

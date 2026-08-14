@@ -27,6 +27,7 @@ import type { StyleSpecification } from "maplibre-gl";
 import Map, { Layer, Marker, NavigationControl, Source, type MapRef } from "react-map-gl/maplibre";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { resultKey, useSearchStore } from "./store";
+import { LocalWhatsAppPage } from "./LocalWhatsAppPage";
 import type { AgeFilter, MapBounds, RecordType, SearchResult } from "./types";
 
 const mapStyle: StyleSpecification = {
@@ -425,7 +426,7 @@ function ResultsMap() {
   );
 }
 
-export function App() {
+function SearchApp() {
   const useDeviceLocation = useSearchStore((state) => state.useDeviceLocation);
   const loadDefaultRecords = useSearchStore((state) => state.loadDefaultRecords);
 
@@ -452,4 +453,8 @@ export function App() {
       </Box>
     </Box>
   );
+}
+
+export function App() {
+  return window.location.pathname === "/local-whatsapp" ? <LocalWhatsAppPage /> : <SearchApp />;
 }

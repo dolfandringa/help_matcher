@@ -2,6 +2,24 @@ import type { AgeFilter, HelpRecord, RecordType, SearchResult } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
+export function websocketUrl(path: string): string {
+  const baseUrl = API_BASE_URL || window.location.origin;
+  const url = new URL(path, baseUrl);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return url.toString();
+}
+
+export async function sendLocalWhatsAppMessage(payload: unknown): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/local/whatsapp/webhook`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(`Local WhatsApp webhook failed with status ${response.status}`);
+  }
+}
+
 export function updatedSinceForAgeFilter(ageFilter: AgeFilter): string | undefined {
   const maxAgeMs = {
     any: undefined,
