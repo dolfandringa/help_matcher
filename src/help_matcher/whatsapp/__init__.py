@@ -1,6 +1,7 @@
 """Simple Python API for WhatsApp bot developers."""
 
 from help_matcher.whatsapp.actions import close_demand, close_offer, create_demand, create_offer, get_or_create_user
+from help_matcher.whatsapp.chatbot import handle_chatbot_message
 from help_matcher.whatsapp.conversations import (
     abandon_conversation,
     complete_conversation,
@@ -25,6 +26,7 @@ __all__ = [
     "geocode_conversation_location",
     "get_or_create_conversation",
     "get_or_create_user",
+    "handle_chatbot_message",
     "record_bot_reply",
     "record_incoming_message",
     "reply_to_message",

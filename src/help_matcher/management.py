@@ -1,3 +1,5 @@
+from time import sleep
+
 import uvicorn
 from geoalchemy2.elements import WKTElement
 from pydantic import Field
@@ -184,6 +186,8 @@ class LoadSampleDataSettings(BaseSettings):
                 except Exception as exc:
                     print(f"Geocoding failed for '{address_text}': {exc}. Using fallback point.")
                     geometry = None
+                finally:
+                    sleep(1)
                 return WKTElement(shape(geometry).wkt if geometry else fallback_wkt, srid=4326)
 
             contacts = {
@@ -202,6 +206,7 @@ class LoadSampleDataSettings(BaseSettings):
             offers = [
                 (
                     Offer(
+                        public_id="O-HEAVY",
                         title="Maquinaria pesada disponible en Cali",
                         original_message=(
                             "Apoyo solidario Cali: maquinaria pesada disponible para enviar a cualquier punto "
@@ -221,17 +226,18 @@ class LoadSampleDataSettings(BaseSettings):
                 ),
                 (
                     Offer(
+                        public_id="O-FOOD",
                         title="Olla comunitaria en El Limonar",
                         original_message=(
                             "Ayuda comunitaria: olla comunitaria en Cali para vecinos de El Limonar, "
                             "Cuarto de Legua, La Cascada y El Refugio. Sin gas, cocinando con lena."
                         ),
-                        administrative_area_name="El Limonar",
-                        administrative_area_level="locality",
-                        address_text="Cruce Calle 62 con Carrera Tercera, al lado de Universidad Santiago de Cali",
+                        administrative_area_name="Cali",
+                        administrative_area_level="municipality",
+                        address_text="Carrera 62 # 3, al lado de Universidad Santiago de Cali",
                         geometry=sample_geometry(
-                            administrative_area_name="El Limonar",
-                            address_text="Cruce Calle 62 con Carrera Tercera, Cali",
+                            administrative_area_name="Cali",
+                            address_text="Carrera 62 # 3, al lado de Universidad Santiago de Cali",
                             fallback_wkt="POINT(-76.5450 3.4074)",
                         ),
                     ),
@@ -240,18 +246,19 @@ class LoadSampleDataSettings(BaseSettings):
                 ),
                 (
                     Offer(
+                        public_id="O-ACOPIO",
                         title="Punto de acopio para rescatistas",
                         original_message=(
                             "Punto de acopio y apoyo a rescatistas y movedores de escombros en Barrio "
-                            "Carrera 60 con Calle 4; se solicitan desayunos preparados, bebidas hidratantes, "
+                            "Carrera 60 # Calle 4; se solicitan desayunos preparados, bebidas hidratantes, "
                             "agua potable y snacks energeticos."
                         ),
-                        administrative_area_name="Barrio Carrera 60 con Calle 4",
+                        administrative_area_name="Barrio Carrera 60 # Calle 4",
                         administrative_area_level="locality",
-                        address_text="Carrera 60 con Calle 4, Cali",
+                        address_text="Carrera 60 # Calle 4, Cali",
                         geometry=sample_geometry(
                             administrative_area_name="Cali",
-                            address_text="Carrera 60 con Calle 4, Cali",
+                            address_text="Carrera 60 # Calle 4, Cali",
                             fallback_wkt="POINT(-76.5470 3.4215)",
                         ),
                     ),
@@ -262,19 +269,20 @@ class LoadSampleDataSettings(BaseSettings):
             demands = [
                 (
                     Demand(
+                        public_id="D-ANCIANATO",
                         title="Ancianato necesita panales, agua y alimentos",
                         original_message=(
                             "Ancianato de las Hermanitas de los Pobres junto a dona Maria Isabel necesita "
                             "panales talla M en adelante, panitos, crema panalitis, agua, alimentos no "
                             "perecederos y manitos colaboradoras para remover escombros."
                         ),
-                        administrative_area_name="Cali",
-                        administrative_area_level="locality",
-                        address_text="Ancianato de las Hermanitas de los Pobres, Cali",
+                        administrative_area_name="San Fernando, Cali",
+                        administrative_area_level="barrio",
+                        address_text="Ancianato de las Hermanitas de los Pobres, Calle 5 # 39, barrio San Fernando, Cali",
                         geometry=sample_geometry(
-                            administrative_area_name="Cali",
-                            address_text="Ancianato de las Hermanitas de los Pobres, Cali",
-                            fallback_wkt="POINT(-76.5319 3.4516)",
+                            administrative_area_name="San Fernando, Cali",
+                            address_text="Ancianato de las Hermanitas de los Pobres, Calle 5 # 39, barrio San Fernando, Cali",
+                            fallback_wkt="POINT(-76.5469 3.4243)",
                         ),
                     ),
                     ["panales", "agua", "alimentos", "escombros"],
@@ -282,18 +290,19 @@ class LoadSampleDataSettings(BaseSettings):
                 ),
                 (
                     Demand(
+                        public_id="D-VANESSA-LOG",
                         title="Edificio Vanessa necesita apoyo logistico",
                         original_message=(
-                            "Requerimiento logistico urgente en Edificio Vanessa, Calle 9 con 44: "
+                            "Requerimiento logistico urgente en Edificio Vanessa, Carrera 44 # 9A: "
                             "2 volquetas de escombros, sistema de comunicacion digital, 5 megafonos "
                             "y chalecos reflectivos."
                         ),
-                        administrative_area_name="Edificio Vanessa",
-                        administrative_area_level="locality",
-                        address_text="Calle 9 con 44, Cali",
+                        administrative_area_name="Cali",
+                        administrative_area_level="municipality",
+                        address_text="Edificio Vanessa, Edificio Vanessa, Carrera 44 # 9A, Cali",
                         geometry=sample_geometry(
-                            administrative_area_name="Edificio Vanessa",
-                            address_text="Calle 9 con 44, Cali",
+                            administrative_area_name="Cali",
+                            address_text="Edificio Vanessa, Carrera 44 # 9A, Cali",
                             fallback_wkt="POINT(-76.5402 3.4225)",
                         ),
                     ),
@@ -302,19 +311,20 @@ class LoadSampleDataSettings(BaseSettings):
                 ),
                 (
                     Demand(
+                        public_id="D-VANESSA-RES",
                         title="Rescate urgente en Edificio Vanessa",
                         original_message=(
                             "Requerimiento urgente para rescate de personas con vida bajo escombros en "
-                            "Edificio Vanessa, Calle 9 con 44: herramientas de construccion, cascos, "
+                            "Edificio Vanessa, Carrera 44 # 9A: herramientas de construccion, cascos, "
                             "equipo de proteccion, comunicadores punto a punto, vacunas antitetanicas, "
                             "hidratacion sin azucar y bebidas energizantes."
                         ),
-                        administrative_area_name="Edificio Vanessa",
-                        administrative_area_level="locality",
-                        address_text="Calle 9 con 44, Cali",
+                        administrative_area_name="Cali",
+                        administrative_area_level="municipality",
+                        address_text="Edificio Vanessa, Carrera 44 # 9A, Cali",
                         geometry=sample_geometry(
-                            administrative_area_name="Edificio Vanessa",
-                            address_text="Calle 9 con 44, Cali",
+                            administrative_area_name="Cali",
+                            address_text="Edificio Vanessa, Carrera 44 # 9A, Cali",
                             fallback_wkt="POINT(-76.5402 3.4225)",
                         ),
                     ),
@@ -323,17 +333,18 @@ class LoadSampleDataSettings(BaseSettings):
                 ),
                 (
                     Demand(
+                        public_id="D-CANTABRIA",
                         title="Edificio Cantabria necesita radios",
                         original_message=(
-                            "Requerimiento urgente en Edificio Cantabria, Calle 8b con 46, Barrio Nueva "
+                            "Requerimiento urgente en Edificio Cantabria, Calle 8b # 46, Barrio Nueva "
                             "Tequendama: 8 radios punto a punto para personas con vida."
                         ),
                         administrative_area_name="Nueva Tequendama",
                         administrative_area_level="barrio",
-                        address_text="Edificio Cantabria, Calle 8b con 46, Cali",
+                        address_text="Edificio Cantabria, Calle 8b # 46, Cali",
                         geometry=sample_geometry(
                             administrative_area_name="Nueva Tequendama",
-                            address_text="Edificio Cantabria, Calle 8b con 46, Cali",
+                            address_text="Edificio Cantabria, Calle 8b # 46, Cali",
                             fallback_wkt="POINT(-76.5427 3.4205)",
                         ),
                     ),
@@ -342,6 +353,7 @@ class LoadSampleDataSettings(BaseSettings):
                 ),
                 (
                     Demand(
+                        public_id="D-LAPAZ",
                         title="12 familias sin casa en La Paz",
                         original_message=(
                             "12 familias perdieron sus casas en el corregimiento de La Paz y necesitan "
@@ -361,17 +373,18 @@ class LoadSampleDataSettings(BaseSettings):
                 ),
                 (
                     Demand(
-                        title="Senales de vida en Torres de Limonar Capri",
+                        public_id="D-LIMONAR",
+                        title="Senales de vida en Torres de Limonar, Capri",
                         original_message=(
                             "Torres de Limonar Capri reporta 3 senales claras de vida y espera apoyo "
                             "de maquinaria para rescate."
                         ),
-                        administrative_area_name="Torres de Limonar Capri",
-                        administrative_area_level="building",
-                        address_text="Torres de Limonar Capri, Cali",
+                        administrative_area_name="Cali",
+                        administrative_area_level="municipality",
+                        address_text="Edificio Torres del Limonar, Carrera 72 #10 BIS, Capri, Cali",
                         geometry=sample_geometry(
-                            administrative_area_name="Torres de Limonar Capri",
-                            address_text="Torres de Limonar Capri, Cali",
+                            administrative_area_name="Cali",
+                            address_text="Edificio Torres del Limonar, Carrera 72 #10 BIS, Capri, Cali",
                             fallback_wkt="POINT(-76.5485 3.4037)",
                         ),
                     ),

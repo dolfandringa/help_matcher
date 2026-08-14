@@ -137,6 +137,7 @@ def complete_conversation(session: Session, conversation: Conversation) -> Conve
     """Mark a conversation complete after creating its Demand or Offer."""
 
     conversation.status = ConversationStatus.completed
+    conversation.current_step = None
     conversation.completed_at = utc_now()
     conversation.updated_at = utc_now()
     session.add(conversation)

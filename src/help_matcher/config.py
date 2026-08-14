@@ -26,8 +26,13 @@ class Settings(BaseSettings):
     )
     jwt_algorithm: str = Field(default="HS256", validation_alias="JWT_ALGORITHM")
     jwt_expire_minutes: int = Field(default=60, validation_alias="JWT_EXPIRE_MINUTES")
+    geocoder_provider: str = Field(default="nominatim", validation_alias="GEOCODER_PROVIDER")
     nominatim_base_url: str = Field(default="https://nominatim.openstreetmap.org", validation_alias="NOMINATIM_BASE_URL")
     nominatim_user_agent: str = Field(default="help-matcher/0.1", validation_alias="NOMINATIM_USER_AGENT")
+    geoapify_base_url: str = Field(default="https://api.geoapify.com", validation_alias="GEOAPIFY_BASE_URL")
+    geoapify_api_key: str = Field(default="", validation_alias="GEOAPIFY_API_KEY")
+    geoapify_batch_poll_seconds: float = Field(default=1.0, validation_alias="GEOAPIFY_BATCH_POLL_SECONDS")
+    geoapify_batch_timeout_seconds: float = Field(default=90.0, validation_alias="GEOAPIFY_BATCH_TIMEOUT_SECONDS")
     geocoding_location_suffixes: str = Field(
         default="",
         validation_alias="GEOCODING_LOCATION_SUFFIXES",

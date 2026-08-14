@@ -17,6 +17,19 @@ def _geometry_from_geojson(geometry_geojson: dict | None) -> WKTElement | None:
     return WKTElement(shape(geometry_geojson).wkt, srid=4326)
 
 
+def _next_public_id(session: Session, *, user: User, model: type[Offer] | type[Demand], prefix: str) -> str:
+    link_model = OfferUser if model is Offer else DemandUser
+    record_id_column = link_model.offer_id if model is Offer else link_model.demand_id
+    existing_count = len(
+        session.exec(
+            select(model.id)
+            .join(link_model, model.id == record_id_column)
+            .where(link_model.user_id == user.id)
+        ).all()
+    )
+    return f"{prefix}{existing_count + 1}"
+
+
 def get_or_create_user(
     session: Session,
     *,
@@ -78,6 +91,7 @@ def create_offer(
         phone_number=phone_number,
     )
     offer = Offer(
+        public_id=_next_public_id(session, user=user, model=Offer, prefix="O"),
         title=title or _title_from_message(original_message),
         original_message=original_message,
         location_text=location_text,
@@ -120,6 +134,7 @@ def create_demand(
         phone_number=phone_number,
     )
     demand = Demand(
+        public_id=_next_public_id(session, user=user, model=Demand, prefix="D"),
         title=title or _title_from_message(original_message),
         original_message=original_message,
         location_text=location_text,
@@ -154,6 +169,18 @@ def close_offer(session: Session, *, whatsapp_bsuid: str, offer_id: int) -> Offe
     return offer
 
 
+def close_offer_by_public_id(session: Session, *, whatsapp_bsuid: str, public_id: str) -> Offer:
+    user = _get_user_or_404(session, whatsapp_bsuid)
+    offer = session.exec(
+        select(Offer)
+        .join(OfferUser, Offer.id == OfferUser.offer_id)
+        .where(OfferUser.user_id == user.id, Offer.public_id == public_id.upper())
+    ).first()
+    if offer is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found")
+    return close_offer(session, whatsapp_bsuid=whatsapp_bsuid, offer_id=offer.id)
+
+
 def close_demand(session: Session, *, whatsapp_bsuid: str, demand_id: int) -> Demand:
     """Close a demand created by the WhatsApp user."""
 
@@ -168,6 +195,18 @@ def close_demand(session: Session, *, whatsapp_bsuid: str, demand_id: int) -> De
     session.commit()
     session.refresh(demand)
     return demand
+
+
+def close_demand_by_public_id(session: Session, *, whatsapp_bsuid: str, public_id: str) -> Demand:
+    user = _get_user_or_404(session, whatsapp_bsuid)
+    demand = session.exec(
+        select(Demand)
+        .join(DemandUser, Demand.id == DemandUser.demand_id)
+        .where(DemandUser.user_id == user.id, Demand.public_id == public_id.upper())
+    ).first()
+    if demand is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Demand not found")
+    return close_demand(session, whatsapp_bsuid=whatsapp_bsuid, demand_id=demand.id)
 
 
 def _get_user_or_404(session: Session, whatsapp_bsuid: str) -> User:

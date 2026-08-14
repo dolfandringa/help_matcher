@@ -3,9 +3,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from sqlmodel import Session
 
 from help_matcher.config import Settings, get_settings
-from help_matcher.whatsapp import extract_text_messages
+from help_matcher.database import get_session
+from help_matcher.whatsapp import extract_text_messages, handle_chatbot_message
 
 router = APIRouter(prefix="/local/whatsapp", tags=["local-whatsapp"])
 
@@ -75,6 +77,7 @@ async def local_whatsapp_socket(websocket: WebSocket, whatsapp_bsuid: str) -> No
 async def receive_local_whatsapp_webhook(
     payload: dict[str, Any],
     settings: Settings = Depends(get_settings),
+    session: Session = Depends(get_session),
 ) -> dict[str, str]:
     for message in extract_text_messages(payload):
         await manager.broadcast(
@@ -90,6 +93,7 @@ async def receive_local_whatsapp_webhook(
                 "raw": payload,
             }
         )
+        reply_text = handle_chatbot_message(session, message)
         await manager.broadcast(
             message.from_bsuid,
             {
@@ -98,14 +102,14 @@ async def receive_local_whatsapp_webhook(
                 "message_id": f"local-reply-{datetime.now(UTC).timestamp()}",
                 "sender_name": settings.bot_name,
                 "to": message.from_bsuid,
-                "text": "Thank you",
+                "text": reply_text,
                 "raw": {
                     "messaging_product": "whatsapp",
                     "recipient_type": "individual",
                     "to": message.from_bsuid,
                     "context": {"message_id": message.message_id},
                     "type": "text",
-                    "text": {"preview_url": False, "body": "Thank you"},
+                    "text": {"preview_url": False, "body": reply_text},
                 },
             }
         )

@@ -1,8 +1,27 @@
-from typing import Any
-
-import httpx
+from dataclasses import dataclass
+from typing import Any, Protocol
 
 from help_matcher.config import Settings, get_settings
+
+
+@dataclass(frozen=True)
+class GeocodingCandidate:
+    geometry: dict[str, Any]
+    confidence: float
+
+
+class LocationProvider(Protocol):
+    def __call__(self, queries: list[str], *, settings: Settings) -> list[GeocodingCandidate]:
+        """Return GeoJSON geometry candidates with confidence scores."""
+
+
+from help_matcher.geocoding import geoapify, nominatim  # noqa: E402
+
+
+PROVIDERS: dict[str, LocationProvider] = {
+    "geoapify": geoapify.geocode_location,
+    "nominatim": nominatim.geocode_location,
+}
 
 
 def build_geocoding_query(
@@ -48,7 +67,7 @@ def geocode_location(
     country: str = "Colombia",
     settings: Settings | None = None,
 ) -> dict[str, Any] | None:
-    """Return the best Nominatim GeoJSON geometry for an address/admin area."""
+    """Return the best configured-provider GeoJSON geometry for an address/admin area."""
 
     current_settings = settings or get_settings()
     queries = build_geocoding_queries(
@@ -60,22 +79,11 @@ def geocode_location(
     if not queries:
         return None
 
-    for query in queries:
-        response = httpx.get(
-            f"{current_settings.nominatim_base_url.rstrip('/')}/search",
-            params={
-                "q": query,
-                "format": "geojson",
-                "polygon_geojson": 1,
-                "addressdetails": 1,
-                "limit": 1,
-                "countrycodes": "co",
-            },
-            headers={"User-Agent": current_settings.nominatim_user_agent},
-            timeout=10,
-        )
-        response.raise_for_status()
-        features = response.json().get("features", [])
-        if features:
-            return features[0].get("geometry")
-    return None
+    provider_name = current_settings.geocoder_provider.lower()
+    provider = PROVIDERS.get(provider_name)
+    if provider is None:
+        raise ValueError(f"Unsupported geocoder provider: {current_settings.geocoder_provider}")
+    candidates = provider(queries, settings=current_settings)
+    if not candidates:
+        return None
+    return max(candidates, key=lambda candidate: candidate.confidence).geometry

@@ -63,6 +63,7 @@ class TagRead(TagBase):
 
 
 class HelpRecordBase(SQLModel):
+    public_id: str | None = Field(default=None, max_length=20, index=True)
     title: str = Field(min_length=1, max_length=200)
     original_message: str = Field(min_length=1)
     location_text: str | None = Field(default=None, max_length=500)

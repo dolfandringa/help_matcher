@@ -1,5 +1,6 @@
 from pydantic_settings import CliApp
-from sqlmodel import Session
+from sqlmodel import Session, select
+from uuid import uuid4
 
 from help_matcher.auth import verify_password
 from help_matcher.management import CreateAdminSettings, ServeSettings
@@ -30,15 +31,16 @@ def test_serve_settings_starts_uvicorn_with_defaults(monkeypatch) -> None:
 def test_create_admin_settings_creates_admin(monkeypatch, capsys) -> None:
     engine = create_postgres_test_engine()
     monkeypatch.setattr("help_matcher.management.engine", engine)
+    username = f"test-{uuid4().hex}"
 
-    CliApp.run(CreateAdminSettings, cli_args=["--username", "test", "--password", "test"])
+    CliApp.run(CreateAdminSettings, cli_args=["--username", username, "--password", "test"])
 
     with Session(engine) as session:
-        user = session.get(User, 1)
+        user = session.exec(select(User).where(User.username == username)).first()
 
     assert user is not None
-    assert user.username == "test"
+    assert user.username == username
     assert user.role == UserRole.admin
     assert user.password_hash is not None
     assert verify_password("test", user.password_hash)
-    assert "Created admin user 'test'." in capsys.readouterr().out
+    assert f"Created admin user '{username}'." in capsys.readouterr().out

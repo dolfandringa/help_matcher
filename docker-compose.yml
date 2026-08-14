@@ -28,8 +28,13 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production-at-least-32-chars}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+      GEOCODER_PROVIDER: ${GEOCODER_PROVIDER:-nominatim}
       NOMINATIM_BASE_URL: ${NOMINATIM_BASE_URL:-https://nominatim.openstreetmap.org}
       NOMINATIM_USER_AGENT: ${NOMINATIM_USER_AGENT:-help-matcher/0.1}
+      GEOAPIFY_BASE_URL: ${GEOAPIFY_BASE_URL:-https://api.geoapify.com}
+      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-}
+      GEOAPIFY_BATCH_POLL_SECONDS: ${GEOAPIFY_BATCH_POLL_SECONDS:-1}
+      GEOAPIFY_BATCH_TIMEOUT_SECONDS: ${GEOAPIFY_BATCH_TIMEOUT_SECONDS:-90}
       GEOCODING_LOCATION_SUFFIXES: ${GEOCODING_LOCATION_SUFFIXES:-Valle del Cauca, Colombia;Quindio, Colombia;Risaralda, Colombia;Caldas, Colombia}
       SERVER_HOST: 0.0.0.0
     ports:

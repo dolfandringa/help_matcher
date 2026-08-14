@@ -202,7 +202,7 @@ def test_conversation_tracks_message_history_and_state() -> None:
         assert user is not None
         assert user.whatsapp_bsuid == "CO.123"
         assert conversation.status == "completed"
-        assert conversation.current_step == "ask_location"
+        assert conversation.current_step is None
         assert conversation.collected_data["tags"] == ["water"]
         assert [message["role"] for message in conversation.message_history] == ["user", "assistant"]
         assert conversation.completed_at is not None

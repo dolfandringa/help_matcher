@@ -2,8 +2,11 @@ import hmac
 from hashlib import sha256
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
+from sqlmodel import Session
 
 from help_matcher.config import Settings, get_settings
+from help_matcher.database import get_session
+from help_matcher.whatsapp import extract_text_messages, handle_chatbot_message, reply_to_message
 
 router = APIRouter(prefix="/webhooks/meta", tags=["webhooks"])
 
@@ -36,8 +39,12 @@ async def receive_whatsapp_webhook(
     request: Request,
     x_hub_signature_256: str | None = Header(default=None),
     settings: Settings = Depends(get_settings),
+    session: Session = Depends(get_session),
 ) -> dict[str, str]:
     body = await request.body()
     verify_meta_signature(body, x_hub_signature_256, settings.bot_client_secret)
-    return {"status": "validated"}
-
+    payload = await request.json()
+    for incoming in extract_text_messages(payload):
+        reply = handle_chatbot_message(session, incoming)
+        reply_to_message(incoming, reply, settings=settings)
+    return {"status": "processed"}
